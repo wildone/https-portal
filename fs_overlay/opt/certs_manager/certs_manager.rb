@@ -19,7 +19,7 @@ class CertsManager
     ensure_signed(NAConfig.domains)
 
     Nginx.stop
-    sleep 0.1
+    sleep 1 # Give Nginx some time to shutdown
   end
 
   def renew
@@ -29,13 +29,10 @@ class CertsManager
 
     NAConfig.domains.each do |domain|
       if OpenSSL.need_to_sign_or_renew? domain
-        if ACME.sign(domain)
-          chain_keys(domain)
-          Nginx.reload
-          puts "Renewed certs for #{domain.name}"
-        else
-          puts("Failed to renew certs for #{domain.name}")
-        end
+        ACME.sign(domain)
+        chain_keys(domain)
+        Nginx.reload
+        puts "Renewed certs for #{domain.name}"
       else
         puts "No need to renew certs for #{domain.name}, it will not expire in #{OpenSSL.expires_in_days(domain.chained_cert_path)} days."
       end

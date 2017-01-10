@@ -3,15 +3,19 @@ module NAConfig
     (env_domains + auto_discovered_domains).uniq(&:name)
   end
 
-  def self.ca
-    if production?
-      'https://acme-v01.api.letsencrypt.org'
-    else
-      'https://acme-staging.api.letsencrypt.org'
+  def self.stage
+    if ENV['STAGE']
+      ENV['STAGE']
+    else #legacy
+      if production_key?
+        'production'
+      else
+        'staging'
+      end
     end
   end
 
-  def self.production?
+  def self.production_key?
     ENV['PRODUCTION'] && ENV['PRODUCTION'].downcase == 'true'
   end
 
@@ -42,9 +46,8 @@ module NAConfig
   private
 
   def self.parse(domain_desc)
-    domain_desc.split(',').map(&:strip).delete_if{ |s| s == "" }.map do |domain|
-      name, upstream = domain.split('->').map(&:strip)
-      Domain.new(name, upstream)
+    domain_desc.split(',').map(&:strip).delete_if{ |s| s == "" }.map do |descriptor|
+      Domain.new(descriptor)
     end
   end
 end
